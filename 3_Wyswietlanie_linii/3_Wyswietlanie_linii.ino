@@ -2,7 +2,7 @@
 #include <Arduino_JSON.h>
 
 const int rs = 7, en = 6, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
-int iDisplayX = 1,  iDisplayY = 1;
+int iDisplayX = 1,  iDisplayY = 1, iCursor = 0;
 bool bSwitchMemoX = false, bSwitchMemoY = false;
 String sDisplayLines[10][10];
 LiquidCrystal lcd(rs, en, d4, d5,d6, d7);
@@ -21,6 +21,7 @@ void setup() {
 
   lcd.begin(16, 2); //inicjalizacja wyświetlacza o liczbie zanków 16 i 2 iniach
   lcd.home();// to to samo co lcd.setCursor(0, 0)
+  lcd.cursor();
 
   initDisplayStrings();
 
@@ -66,12 +67,22 @@ void changeDisplayData(){
   //X data
   if (x_data > 300) {
     if (!bSwitchMemoX) {
-      iDisplayX--;
+      if (iCursor == 4){
+        iDisplayX--;
+      }
+      if (iCursor == 5){
+        iDisplayY--;
+      }
     }
     bSwitchMemoX = true;
   } else if (x_data < -300) {
     if (!bSwitchMemoX) {
-      iDisplayX++;
+      if (iCursor == 4){
+        iDisplayX++;
+      }
+      if (iCursor == 5){
+        iDisplayY++;
+      }
     }
     bSwitchMemoX = true;
   } else {
@@ -80,13 +91,13 @@ void changeDisplayData(){
   //Y data
   if (y_data > 300) {
     if (!bSwitchMemoY) {
-      iDisplayY--;
+      iCursor++;
     }
     bSwitchMemoY = true;
   } else if (y_data < -300) {
     if (!bSwitchMemoY) {
-      iDisplayY++;
-    }
+      iCursor--;
+   }
     bSwitchMemoY = true;
   } else {
     bSwitchMemoY = false;
@@ -132,6 +143,8 @@ void displayData(){
 
   digitalWrite(13, LOW);
   delay(100);
+  lcd.setCursor(iCursor, 0);
+
   //Serial.print(digitalRead(sw_pin));
 }
 
