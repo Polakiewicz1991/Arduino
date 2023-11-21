@@ -64,22 +64,26 @@ void initDisplayStrings() {
 }
 void changeDisplayData(){
   // change display data
-  //X data
+
   if (x_data > 300) {
     if (!bSwitchMemoX) {
+      //X data
       if (iCursor == 4){
         iDisplayX--;
       }
-      if (iCursor == 5){
+        //Y data
+     if (iCursor == 5){
         iDisplayY--;
       }
     }
     bSwitchMemoX = true;
   } else if (x_data < -300) {
     if (!bSwitchMemoX) {
+      //X data
       if (iCursor == 4){
         iDisplayX++;
       }
+       //Y data
       if (iCursor == 5){
         iDisplayY++;
       }
@@ -88,7 +92,7 @@ void changeDisplayData(){
   } else {
     bSwitchMemoX = false;
   }
-  //Y data
+ 
   if (y_data > 300) {
     if (!bSwitchMemoY) {
       iCursor++;
