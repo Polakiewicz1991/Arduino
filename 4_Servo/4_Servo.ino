@@ -1,42 +1,62 @@
 #include <LiquidCrystal.h>
 #include <Arduino_JSON.h>
 #include <Servo.h>
+#include <SoftwareSerial.h>
+#include <PpBluetooth.h>
 
-const int iCycleTime = 10;
+//Hardware controll - cycle time
+const int iCycleTime = 100;
 
+//Hardware Liquid Crystal Display - configuration
 const int rs = 7, en = 6, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5,d6, d7);
+//Software Liquid Crystal Display - variables declaration
 int iDisplayX = 1,  iDisplayY = 1, iCursor = 0;
 bool bSwitchMemoX = false, bSwitchMemoY = false;
 String sDisplayLines[10][10];
-LiquidCrystal lcd(rs, en, d4, d5,d6, d7);
 
+//Hardware JoyStick - configuration
 const int x_pin = A0, y_pin = A1, sw_pin = 8;
+//Software JoyStick - variables declaration
 int x_data, y_data, sw_data, x_data_raw, y_data_raw;
 
-Servo myServo;
+//Hardware Servo 9g - configuration
+Servo miniServo9g;
 const int servoPin = 9;
+//Software Servo 9g - variables declarations
 int iServoPos = 90;
-bool bServoDir = true;
 
+//Hardware Bluetooth module - Initialization
+PpBluetooth BtDevice(9600, 11, 12);
 
 void setup() {
-  // put your setup code here, to run once:
+  //Flashing diode - Initialization
   pinMode(13, OUTPUT);
   pinMode(sw_pin, INPUT);
   digitalWrite(sw_pin, HIGH);
+
+  //Servo 9g - Initialization
   x_data_raw = analogRead(x_pin);
   y_data_raw = analogRead(y_pin);
 
+  //LCD - Initaialization
   lcd.begin(16, 2); //inicjalizacja wyświetlacza o liczbie zanków 16 i 2 iniach
   lcd.home();// to to samo co lcd.setCursor(0, 0)
   lcd.cursor();
-
-  myServo.attach(servoPin);
-  myServo.write(iServoPos);
-
+  //LCD - Initialization displayed data
   initDisplayStrings();
 
-  Serial.begin(9600);
+  //Mini servo 9g - Initialization
+  miniServo9g.attach(servoPin);
+  miniServo9g.write(iServoPos);
+
+  //Serial monitor - Initialization
+  Serial.begin(115200);
+  delay(1000);
+  //Bluetooth - Initalization
+  BtDevice.ble_help();
+  delay(1000); 
+
 }
 
 void loop() {
@@ -45,40 +65,16 @@ void loop() {
   delay(iCycleTime);
 
   readAnalogData();
-  writeSerialData();
+  //writeSerialData();
   changeDisplayData();
   displayData();
-/*
-  if (iServoPos >= 180){
-    bServoDir  = false;
-  } else if (iServoPos <= -180) {
-    bServoDir  = true;
-  }
 
-  if (bServoDir){
-    iServoPos += 10;
-  } else if (!bServoDir) {
-    iServoPos -= 10;
-  }
-*/
+  //Prit serial message
+  Serial.print("Serial 115200 baud OK \n");
 
-  iServoPos = map(x_data, -500, 500, 0, 180);
-  myServo.write(iServoPos);
-  /*
-  if (Serial.available() > 0) {
-    // Jeśli dostępne są dane w Serial Monitor, odczytaj je
-    iServoPos = Serial.parseInt();
 
-    // Wyświetl odczytaną wartość w Serial Monitor
-    Serial.print("Odczytano wartość: ");
-    Serial.println(iServoPos);
-    myServo.write(iServoPos);
-  }
-  */
   digitalWrite(13, LOW);
   delay(iCycleTime);
-
-0
 
 }
 
@@ -87,31 +83,15 @@ void readAnalogData(){
   //read joystick data
   x_data = analogRead(x_pin) - x_data_raw;
   y_data = analogRead(y_pin) - y_data_raw;
-  sw_data = digitalRead(sw_pin);
-}
-
+  sw_data = digitalRead(sw_pin);}
 void initDisplayStrings() {
   for (int i = 0; i <= 9; ++i) {
     for (int j = 0; j <= 9; ++j) {
       sDisplayLines[i][j] = String(char('A' + i)) + " " + String(char('A' + j));
     }
-  }
-  /*String sDisplayLines[10][10] = {
-  {"1 1", "1 2", "1 3", "1 4", "1 5", "1 6", "1 7", "1 8", "1 9", "1 10"},
-  {"2 1", "2 2", "2 3", "2 4", "2 5", "2 6", "2 7", "2 8", "2 9", "2 10"},
-  {"3 1", "3 2", "3 3", "3 4", "3 5", "3 6", "3 7", "3 8", "3 9", "3 10"},
-  {"4 1", "4 2", "4 3", "4 4", "4 5", "4 6", "4 7", "4 8", "4 9", "4 10"},
-  {"5 1", "5 2", "5 3", "5 4", "5 5", "5 6", "5 7", "5 8", "5 9", "5 10"},
-  {"6 1", "6 2", "6 3", "6 4", "6 5", "6 6", "6 7", "6 8", "6 9", "6 10"},
-  {"7 1", "7 2", "7 3", "7 4", "7 5", "7 6", "7 7", "7 8", "7 9", "7 10"},
-  {"8 1", "8 2", "8 3", "8 4", "8 5", "8 6", "8 7", "8 8", "8 9", "8 10"},
-  {"9 1", "9 2", "9 3", "9 4", "9 5", "9 6", "9 7", "9 8", "9 9", "9 10"},
-  {"10 1", "10 2", "10 3", "10 4", "10 5", "10 6", "10 7", "10 8", "10 9", "10 10"}
-};*/
-}
+  }}
 void changeDisplayData(){
   // change display data
-
   if (x_data > 300) {
     if (!bSwitchMemoX) {
       //X data
@@ -164,8 +144,7 @@ void changeDisplayData(){
     iDisplayY = 1;
   } else if (iDisplayY > 10) {
     iDisplayY = 10;
-  }
-}
+  }}
 void displayData(){
 
   lcd.home();// to to samo co lcd.setCursor(0, 0)
@@ -194,8 +173,7 @@ void displayData(){
   lcd.setCursor(iCursor, 0);
 
   //Serial.print(digitalRead(sw_pin));
-}
-
+  }
 void writeSerialData(){
   Serial.print("Switch:  ");
   Serial.print(digitalRead(sw_pin));
@@ -208,8 +186,33 @@ void writeSerialData(){
   Serial.println(" | ");
   Serial.print("Servo pos:  ");
   Serial.print(iServoPos);
-  Serial.println(" | ");
-  Serial.print("Servo dir:  ");
-  Serial.print(bServoDir);
+  }
+void servoControl(){
+  /*
+    if (iServoPos >= 180){
+      bServoDir  = false;
+    } else if (iServoPos <= -180) {
+      bServoDir  = true;
+    }
 
-}
+    if (bServoDir){
+      iServoPos += 10;
+    } else if (!bServoDir) {
+      iServoPos -= 10;
+    }
+  */
+
+  iServoPos = map(x_data, -500, 500, 0, 180);
+  miniServo9g.write(iServoPos);
+  /*
+  if (Serial.available() > 0) {
+    // Jeśli dostępne są dane w Serial Monitor, odczytaj je
+    iServoPos = Serial.parseInt();
+
+    // Wyświetl odczytaną wartość w Serial Monitor
+    Serial.print("Odczytano wartość: ");
+    Serial.println(iServoPos);
+    myServo.write(iServoPos);
+  }
+  */
+  }
