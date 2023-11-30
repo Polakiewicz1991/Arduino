@@ -1,11 +1,7 @@
 #include <LiquidCrystal.h>
-#include <Arduino_JSON.h>
 #include <Servo.h>
 #include <SoftwareSerial.h>
 #include <PpBluetooth.h>
-
-#define SERIAL_RX_BUFFER_SIZE 256
-#define SERIAL_TX_BUFFER_SIZE 256
 
 //Hardware controll - cycle time
 const int iCycleTime = 100;
@@ -31,7 +27,7 @@ int iServoPos = 90;
 
 //Hardware Bluetooth module - Initialization
 //PpBluetooth BtDevice(9600, 11, 12);
-SoftwareSerial BtDevice(12,11);
+SoftwareSerial BtDevice(10,11); //RX / TX
 
 void setup() {
   //Flashing diode - Initialization
@@ -65,7 +61,7 @@ void setup() {
 }
 
 void loop() {
-
+/*
   digitalWrite(13, HIGH);
   delay(iCycleTime);
 
@@ -79,23 +75,29 @@ void loop() {
     Serial.print("Odczytano:\n");
     Serial.println(receivedChar);
 
-    if(receivedChar = "1"){
-      Serial.print("Wysłano dane\n");
+    if(receivedChar == '1'){
+      char chMessage[] = "AT";
+      Serial.print("Wysłano dane AT \n");
+      // BtDevice.write(chMessage,sizeof(chMessage));
       BtDevice.write("AT");
 
       delay(100);
       int iAvailable = BtDevice.available();
       Serial.print("W buforze znajduje się : ");
-      Serial.println(iAvailable);      
+      Serial.print(iAvailable);      
       Serial.print(" znaków.\n");
 
     }
+    
   }
 
   // Odczytaj wszystkie dostępne znaki
+  if (BtDevice.available() > 0){
+      Serial.print("Odczytano: ");
+  }
   while (BtDevice.available()) {
 
-    int iAvailable = BtDevice.available();
+    /*int iAvailable = BtDevice.available();
     Serial.print("W buforze znajduje się : ");
     Serial.println(iAvailable);      
     Serial.print(" znaków.\n");
@@ -114,13 +116,26 @@ void loop() {
   
     Serial.print("\n\n");
 
+  char receivedChar = BtDevice.read();
+  Serial.print(receivedChar);  
+
+  
+  Serial.println(BtDevice.available());
+  digitalWrite(13, LOW);
+  delay(iCycleTime);    
+  */
+  if (BtDevice.available()) {
+    char receivedChar = BtDevice.read();
+    Serial.print(receivedChar);  // Wyświetl odczytane dane z modułu BT w monitorze szeregowym Arduino
   }
 
-
-  digitalWrite(13, LOW);
-  delay(iCycleTime);
-
+  if (Serial.available()) {
+    char charToSend = Serial.read();
+    BtDevice.print(charToSend);  // Wyślij dane z monitora szeregowego do modułu BT
+  }
 }
+
+
 
 //Funkcje
 
