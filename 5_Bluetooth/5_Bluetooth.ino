@@ -18,16 +18,19 @@ String sDisplayLines[10][10];
 const int x_pin = A0, y_pin = A1, sw_pin = 8;
 //Software JoyStick - variables declaration
 int x_data, y_data, sw_data, x_data_raw, y_data_raw;
-
+/*
 //Hardware Servo 9g - configuration
 Servo miniServo9g;
 const int servoPin = 9;
 //Software Servo 9g - variables declarations
 int iServoPos = 90;
-
+*/
 //Hardware Bluetooth module - Initialization
 //PpBluetooth BtDevice(9600, 11, 12);
 SoftwareSerial BtDevice(10,11); //RX / TX
+String receivedBtDeciceString = "";
+String receivedSerialString = "";
+int receivedDataLenght = 0;
 
 void setup() {
   //Flashing diode - Initialization
@@ -43,100 +46,100 @@ void setup() {
   lcd.begin(16, 2); //inicjalizacja wyświetlacza o liczbie zanków 16 i 2 iniach
   lcd.home();// to to samo co lcd.setCursor(0, 0)
   lcd.cursor();
-
+  /*
   //Mini servo 9g - Initialization
   miniServo9g.attach(servoPin);
   miniServo9g.write(iServoPos);
-
+  */
   //Serial monitor - Initialization
-  Serial.begin(9600);
-  delay(1000);
+  Serial.begin(115200);
+  while (!Serial) {
+    //wait for connection witch Serial Monitor
+  }
   //Bluetooth - Initalization
   BtDevice.begin(9600);
- //BtDevice.ble_help();
-  delay(1000); 
+  pinMode(12, OUTPUT); //Eable bit
+
+
+  while (!BtDevice) {
+    //wait for connection witch HM-10 module
+  }
 
   Serial.print("Initialization done \n");
 
 }
 
+/* Opowiedź na pytanie czemu komendy AT nie dziłają
+https://forum.arduino.cc/t/hm-10-bluetooth-module-is-not-responding-to-at-commands-with-arduino-uno/641873
+Quite a lot, but nothing damaging. These modules have two exclusive modes:
+AT mode - by default
+Bluetooth Communications mode(i.e. wireless) by initiation.
+This means you can only be in AT mode when you are not communicating. Result? you can only send AT modes from Arduino, not your Android app.
+*/
+
 void loop() {
-/*
-  digitalWrite(13, HIGH);
-  delay(iCycleTime);
 
-
-  //Prit serial message
-  if (Serial.available() > 0) {
-    // Odczytanie pojedynczego znaku
-    char receivedChar = Serial.read();
-
-    // Wyświetlenie odczytanego znaku w monitorze szeregowym
-    Serial.print("Odczytano:\n");
-    Serial.println(receivedChar);
-
-    if(receivedChar == '1'){
-      char chMessage[] = "AT";
-      Serial.print("Wysłano dane AT \n");
-      // BtDevice.write(chMessage,sizeof(chMessage));
-      BtDevice.write("AT");
-
-      delay(100);
-      int iAvailable = BtDevice.available();
-      Serial.print("W buforze znajduje się : ");
-      Serial.print(iAvailable);      
-      Serial.print(" znaków.\n");
-
-    }
-    
-  }
-
-  // Odczytaj wszystkie dostępne znaki
-  if (BtDevice.available() > 0){
-      Serial.print("Odczytano: ");
-  }
-  while (BtDevice.available()) {
-
-    /*int iAvailable = BtDevice.available();
-    Serial.print("W buforze znajduje się : ");
-    Serial.println(iAvailable);      
-    Serial.print(" znaków.\n");
-
-    char receivedChar = BtDevice.read();
-
-    if (isdigit(receivedChar)) {
-      int receivedInt = atoi(&receivedChar);
-      Serial.print("Odczytano jako int: ");
-      Serial.println(receivedInt);
-    } else {
-      int asciiValue = int(receivedChar);
-      Serial.print("Odczytano jako wartość ASCII: ");
-      Serial.println(asciiValue);      
-    }
-  
-    Serial.print("\n\n");
-
-  char receivedChar = BtDevice.read();
-  Serial.print(receivedChar);  
-
-  
-  Serial.println(BtDevice.available());
-  digitalWrite(13, LOW);
-  delay(iCycleTime);    
-  */
   if (BtDevice.available()) {
-    char receivedChar = BtDevice.read();
-    Serial.print(receivedChar);  // Wyświetl odczytane dane z modułu BT w monitorze szeregowym Arduino
+    char receivedCharBtDevice = BtDevice.read();
+    receivedBtDeciceString += receivedCharBtDevice;
+
+    if ((receivedCharBtDevice == '\n') or (BtDevice.available() == 1)){
+
+      Serial.println(receivedBtDeciceString);
+
+      // Wyczyść łańcuch po przetworzeniu
+      receivedBtDeciceString = "";
+
+    }
+    //Serial.print(receivedChar);  // Wyświetl odczytane dane z modułu BT w monitorze szeregowym Arduino
   }
 
-  if (Serial.available()) {
-    char charToSend = Serial.read();
-    BtDevice.print(charToSend);  // Wyślij dane z monitora szeregowego do modułu BT
+  if (Serial.available() > 0) {
+    delay(10);
+    if (Serial.available() > receivedDataLenght){
+      receivedDataLenght = Serial.available();
+    }
+
+    
+    char receivedCharSerial = Serial.read();
+
+    // Dodaj znaki do ciągu znaków, aż napotkasz znak nowej linii
+    receivedSerialString += receivedCharSerial;
+     
+  } else if ((Serial.available() == 0) and (receivedSerialString.length() > 0)){
+
+      if (receivedSerialString.indexOf("AT ON") == 0){
+        digitalWrite(12, HIGH);
+        Serial.println("Tryb AT ON");
+
+      } else if(receivedSerialString.indexOf("AT OFF") == 0){
+        digitalWrite(12, LOW);      
+        Serial.println("Tryb AT OFF");
+
+      } else if(receivedSerialString.indexOf("send AT+HELP?") == 0){      
+        Serial.println("Komenda AT+HELP?");
+        BtDevice.print("at+help?");
+
+      } else if(receivedSerialString.indexOf("send AT") == 0){      
+        Serial.println("Komenda AT");
+        BtDevice.print("at");
+
+      } else {
+        //char receivedCharSerial = Serial.read();
+        //receivedSerialString += receivedCharSerial;
+        BtDevice.print(receivedSerialString); 
+        BtDevice.print("Recived string lenght: ");
+        BtDevice.print(receivedDataLenght); 
+        BtDevice.print("\n");
+
+        // Wyczyść łańcuch po przetworzeniu
+      }
+      receivedSerialString = "";
+      receivedDataLenght = 0;
+
   }
 }
 
 
-
-//Funkcje
 
 
