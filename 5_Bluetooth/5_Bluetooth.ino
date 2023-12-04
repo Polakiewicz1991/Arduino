@@ -52,7 +52,7 @@ void setup() {
   miniServo9g.write(iServoPos);
   */
   //Serial monitor - Initialization
-  Serial.begin(115200);
+  Serial.begin(9600);
   while (!Serial) {
     //wait for connection witch Serial Monitor
   }
@@ -65,7 +65,7 @@ void setup() {
     //wait for connection witch HM-10 module
   }
 
-  Serial.print("Initialization done \n");
+  //Serial.print("Initialization done \n");
 
 }
 
@@ -95,13 +95,13 @@ void loop() {
   }
 
   if (Serial.available() > 0) {
-    delay(10);
     if (Serial.available() > receivedDataLenght){
       receivedDataLenght = Serial.available();
     }
 
     
     char receivedCharSerial = Serial.read();
+    Serial.print(receivedCharSerial);
 
     // Dodaj znaki do ciągu znaków, aż napotkasz znak nowej linii
     receivedSerialString += receivedCharSerial;
